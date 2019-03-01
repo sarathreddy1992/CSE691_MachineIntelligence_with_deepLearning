@@ -11,7 +11,8 @@ class Svm (object):
         # - Generate a random svm weight matrix to compute loss                 #
         #   with standard normal distribution and Standard deviation = 0.01.    #
         #########################################################################
-        W=np.random.randn(10,3073)*0.01
+        self.W = np.random.random((inputDim, outputDim))* 0.01
+
         pass
         #########################################################################
         #                       END OF YOUR CODE                                #
@@ -34,7 +35,8 @@ class Svm (object):
         - gradient with respect to weights self.W (dW) with the same shape of self.W.
         """
         loss = 0.0
-        dW = np.zeros_like(self.W)
+        self.dW = np.zeros_like(self.W)
+
         #############################################################################
         # TODO: 20 points                                                           #
         # - Compute the svm loss and store to loss variable.                        #
@@ -43,21 +45,25 @@ class Svm (object):
         # Bonus:                                                                    #
         # - +2 points if done without loop                                          #
         #############################################################################
-        num_classes = W.shape[0]
-        num_train = x.shape[1]
-        scores = x.dot(w)
-        maxscore = np.max(scores, 1)
-        shifted_scores = scores - maxscore[:, np.newaxis]
-        probs = np.exp(shifted_scores) / np.sum(np.exp(shifted_scores), 1)[:, np.newaxis]
-        losses = -np.log(probs[xrange(num_train), y])
-        loss = losses.sum() / num_train
-        loss += 0.5 * reg * np.sum(w * w)
 
-        ##################3Computing the gradient###################################
-        trueIndices = np.zeros(probs.shape)
-        trueIndices[xrange(num_train), y] = 1
-        dw = -x.transpose().dot(trueIndices - probs)
-        dw /= num_train + reg * W
+        num_train = x.shape[0]
+        S = x.dot(self.W)
+        S_yi = S [np.arange(num_train),y]
+        delta = S - S_yi[:,np.newaxis]+1
+        loss_i = np.maximum(0,delta)
+        loss_i [np.arange(num_train),y] = 0
+        loss = np.sum(loss_i)/num_train
+        loss = loss + reg * np.sum(self.W * self.W)
+
+        grad = loss_i
+        grad[loss_i > 0] = 1
+        dSy = np.sum(grad,axis=1)
+        grad[np.arange(num_train),y] = -dSy[range(num_train)]
+        dW = np.transpose(x).dot(grad)
+        dW = dW / num_train
+        dW = dW + 2 * reg * self.W
+
+
 
         pass
         #############################################################################
@@ -102,15 +108,16 @@ class Svm (object):
             # Hint:                                                                 #
             # - Use np.random.choice                                                #
             #########################################################################
-            randomindx=np.random.choice(num_train,batchSize,replace=True)
-            xBatch=x[randomindx]
-            yBatch=y[randomindx]
 
+            batch = np.random.choice(np.arange(x.shape[0]),batchSize,replace = False)
+            xBatch = x[batch]
+            yBatch = y[batch]
 
+            loss, dW = self.calLoss(x[batch],y[batch],reg)
 
+            lossHistory.append(loss)
 
-            ###################Updating the weights using gradient and learning rate###############
-            self.W=self.W-lr*dW
+            self.W = self.W - lr * dW
 
             pass
             #########################################################################
@@ -123,7 +130,7 @@ class Svm (object):
 
         return lossHistory
 
-    def predict (self, x,):
+    def predict (self, x):
         """
         Predict the y output.
 
@@ -138,10 +145,9 @@ class Svm (object):
         # TODO: 5 points                                                          #
         # -  Store the predict output in yPred                                    #
         ###########################################################################
-        scores=x.dot(self.W)
-        yPred=np.argmax(scores,axis=1)
 
-
+        Score = x.dot(self.W)
+        yPred = np.argmax(Score,axis = 1)
 
         pass
         ###########################################################################
@@ -156,9 +162,7 @@ class Svm (object):
         # TODO: 5 points                                                          #
         # -  Calculate accuracy of the predict value and store to acc variable    #
         ###########################################################################
-        yPred=self.predict(x)
-        acc=np.mean(y==yPred)*100
-
+        acc = np.mean(y == self.predict(x))
 
 
         pass

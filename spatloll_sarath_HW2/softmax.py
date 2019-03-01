@@ -11,7 +11,8 @@ class Softmax (object):
         # - Generate a random softmax weight matrix to use to compute loss.     #
         #   with standard normal distribution and Standard deviation = 0.01.    #
         #########################################################################
-        W=np.random.randn(10,3073)*0.01
+        self.W = np.random.random((inputDim, outputDim)) * 0.01
+
         pass
         #########################################################################
         #                       END OF YOUR CODE                                #
@@ -39,34 +40,27 @@ class Softmax (object):
         # TODO: 20 points                                                           #
         # - Compute the softmax loss and store to loss variable.                    #
         # - Compute gradient and store to dW variable.                              #
-        # - Use L2 regularization                                                   #
+        # - Use L2 regularization                                                  #
         # Bonus:                                                                    #
         # - +2 points if done without loop                                          #
         #############################################################################
 
-       ########################Computing the Loss##################################
+        S = x.dot(self.W)
+        S1 = S - np.max(S,axis =1, keepdims = True)
+        exp_S1 = np.exp(S1)
+        sum_f = np.sum(exp_S1,axis = 1, keepdims = True)
+        P_yi = exp_S1[np.arange(x.shape[0]),y]/sum_f
+        loss_i = -np.log(P_yi)
 
-        num_classes=W.shape[0]
-        num_train=x.shape[1]
-        scores=x.dot(w)
-        maxscore=np.max(scores,1)
-        shifted_scores=scores-maxscore[:,np.newaxis]
-        probs=np.exp(shifted_scores)/np.sum(np.exp(shifted_scores),1)[:,np.newaxis]
-        losses=-np.log(probs[xrange(num_train),y])
-        loss=losses.sum()/num_train
-        loss+=0.5*reg*np.sum(w*w)
+        loss = np.sum(loss_i)/x.shape[0]
+        loss = loss + reg * np.sum(self.W * self.W)
 
-        ##################3Computing the gradient###################################
-        trueIndices=np.zeros(probs.shape)
-        trueIndices[xrange(num_train),y]=1
-        dw=-x.transpose().dot(trueIndices-probs)
-        dw/=num_train+reg*W
+        dS = exp_S1/sum_f
+        dS[range(x.shape[0]), y] -= 1
+        dS = dS/x.shape[0]
 
-
-
-
-
-
+        dW = np.dot(x.T, dS)
+        dW = dW + 2* reg * self.W
 
 
         pass
@@ -112,16 +106,16 @@ class Softmax (object):
             # Hint:                                                                 #
             # - Use np.random.choice                                                #
             #########################################################################
-            randomIndex=np.random.choice(num_train,batchSize)
-            xBatch=x[randomIndex]
-            yBatch=y[randomIndex]
 
-            ###################Updating the weights using gradient and learning rate###############
+            batch = np.random.choice(np.arange(x.shape[0]), batchSize, replace=False)
+            xBatch = x[batch]
+            yBatch = y[batch]
+
+            loss, dW = self.calLoss(x[batch], y[batch], reg)
+
+            lossHistory.append(loss)
+
             self.W = self.W - lr * dW
-
-
-
-
 
             pass
             #########################################################################
@@ -149,10 +143,9 @@ class Softmax (object):
         # TODO: 5 points                                                          #
         # -  Store the predict output in yPred                                    #
         ###########################################################################
-        scores=np.dot(self.W,x)
-        yPred=scores.argmax(axis=0)
 
-
+        Score = x.dot(self.W)
+        yPred = np.argmax(Score,axis = 1)
 
         pass
         ###########################################################################
@@ -167,19 +160,13 @@ class Softmax (object):
         # TODO: 5 points                                                          #
         # -  Calculate accuracy of the predict value and store to acc variable    #
         ###########################################################################
-        yPredict=self.predict(x)
-        acc=np.mean(y==yPredict)*100
 
-
-
-
-
-
+        acc = np.mean(y == self.predict(x))
 
         pass
-         ###########################################################################
-         #                           END OF YOUR CODE                              #
-         ###########################################################################
+        ###########################################################################
+        #                           END OF YOUR CODE                              #
+        ###########################################################################
         return acc
 
 
